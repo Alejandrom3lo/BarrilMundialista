@@ -1,0 +1,20 @@
+/* Estilos globales mínimos. La app usa estilos inline; aquí solo va lo que
+   el entorno original (artefacto de Claude) proveía vía Tailwind. */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #03071a;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

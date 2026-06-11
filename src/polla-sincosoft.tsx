@@ -35,41 +35,56 @@ const K_RAFFLE = "polla:raffle";
 const MS_FORM_URL = "https://forms.office.com/pages/responsepage.aspx?id=Qby0vFToEE-5BtFkPUXjST-0MedbdRdGkHts-rWF6sdUN0cyVkdKNzNBTTVNQlRRQUE0UVk2T1VGSy4u&route=shorturl";
 
 /* ============ STORAGE HELPERS ============ */
-async function loadParticipants() {
+/* Datos compartidos (solo lectura): archivos JSON publicados en el repositorio (public/data/).
+   El admin los actualiza con el botón "Exportar JSON" y subiéndolos a GitHub.
+   Datos locales (escritura): localStorage del navegador (tu inscripción y los borradores del admin). */
+const DATA_BASE = `${import.meta.env.BASE_URL}data/`;
+
+async function fetchShared(file) {
   try {
-    const r = await window.storage.get(K_PART, true);
-    return r && r.value ? JSON.parse(r.value) : [];
-  } catch { return []; }
-}
-async function saveParticipants(list) {
-  try {
-    const r = await window.storage.set(K_PART, JSON.stringify(list), true);
-    return !!r;
-  } catch (e) { console.error("save participants", e); return false; }
-}
-async function loadResults() {
-  try {
-    const r = await window.storage.get(K_RES, true);
-    return r && r.value ? JSON.parse(r.value) : { 1: null, 2: null, 3: null };
-  } catch { return { 1: null, 2: null, 3: null }; }
-}
-async function saveResults(obj) {
-  try {
-    const r = await window.storage.set(K_RES, JSON.stringify(obj), true);
-    return !!r;
-  } catch (e) { console.error("save results", e); return false; }
-}
-async function loadRaffle() {
-  try {
-    const r = await window.storage.get(K_RAFFLE, true);
-    return r && r.value ? JSON.parse(r.value) : null;
+    const res = await fetch(`${DATA_BASE}${file}?v=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
   } catch { return null; }
 }
-async function saveRaffle(obj) {
+function readLocal(key, fallback) {
   try {
-    const r = await window.storage.set(K_RAFFLE, JSON.stringify(obj), true);
-    return !!r;
-  } catch (e) { console.error("save raffle", e); return false; }
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch { return fallback; }
+}
+function writeLocal(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch (e) { console.error("save", key, e); return false; }
+}
+
+async function loadParticipants() {
+  const remote = (await fetchShared("participants.json")) || [];
+  const local = readLocal(K_PART, []);
+  const seen = new Set(remote.map((p) => p.email.toLowerCase()));
+  return [...remote, ...local.filter((p) => !seen.has(p.email.toLowerCase()))];
+}
+async function saveParticipants(list) {
+  return writeLocal(K_PART, list);
+}
+async function loadResults() {
+  const remote = (await fetchShared("results.json")) || { 1: null, 2: null, 3: null };
+  const local = readLocal(K_RES, null);
+  if (!local) return remote;
+  const merged = { ...remote };
+  for (const k of [1, 2, 3]) if (local[k]) merged[k] = local[k];
+  return merged;
+}
+async function saveResults(obj) {
+  return writeLocal(K_RES, obj);
+}
+async function loadRaffle() {
+  const local = readLocal(K_RAFFLE, null);
+  if (local) return local;
+  return await fetchShared("raffle.json");
+}
+async function saveRaffle(obj) {
+  return writeLocal(K_RAFFLE, obj);
 }
 
 /* ============ UTILIDADES ============ */
@@ -200,35 +215,14 @@ function BarrelGrill() {
 }
 
 /* ============ FOTO DEL BARRIL ============ */
+/* Busca public/barril.jpg en el sitio; si no existe, muestra el barril dibujado en SVG. */
 function BarrelPhoto() {
-  const [src, setSrc] = useState(null);
   const [err, setErr] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const candidates = ["image.png", "image.jpg", "image.jpeg", "barril.png", "barril.jpg", "pasted-image.png"];
-      for (const f of candidates) {
-        try {
-          const data = await window.fs.readFile(f);
-          const ext = f.split(".").pop() === "png" ? "png" : "jpeg";
-          const blob = new Blob([data], { type: `image/${ext}` });
-          setSrc(URL.createObjectURL(blob));
-          return;
-        } catch { /* siguiente candidato */ }
-      }
-      setErr(true);
-    })();
-  }, []);
-
   if (err) return <div style={{ padding: 16 }}><BarrelGrill /></div>;
-  if (!src) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 30, color: C.muted, fontSize: 13 }}>
-      <Loader2 className="animate-spin" size={16} /> Cargando imagen del premio…
-    </div>
-  );
   return (
     <img
-      src={src}
+      src={`${import.meta.env.BASE_URL}barril.jpg`}
       alt="Barril asador parrillero en acero inoxidable con escudo de Colombia"
       onError={() => setErr(true)}
       style={{ width: "100%", display: "block" }}
@@ -771,6 +765,22 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
     URL.revokeObjectURL(url);
   };
 
+  /* Descarga los 3 archivos de datos compartidos, listos para subirlos a public/data/ en GitHub.
+     Al subirlos, la p\u00E1gina se vuelve a publicar y todos los participantes ven los mismos datos. */
+  const downloadJSON = (filename, data) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const exportShared = () => {
+    downloadJSON("participants.json", participants);
+    downloadJSON("results.json", results);
+    downloadJSON("raffle.json", raffle);
+  };
+
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
@@ -914,6 +924,10 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
           <button onClick={exportCSV} disabled={participants.length === 0} style={actBtn(C.blue)}>
             <Download size={16} /> Exportar CSV
+          </button>
+          <button onClick={exportShared} title="Descarga participants.json, results.json y raffle.json para subirlos a la carpeta public/data/ del repositorio en GitHub"
+            style={actBtn("transparent", C.green)}>
+            <Download size={16} /> Exportar JSON (publicar en GitHub)
           </button>
           {!confirmReset ? (
             <button onClick={() => setConfirmReset(true)} style={actBtn("transparent", C.red)}>

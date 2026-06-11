@@ -30,13 +30,28 @@ Gana quien acumule más puntos al final de los 3 partidos. En caso de empate, la
 - 🔐 Panel de administración protegido con contraseña: ingreso de resultados reales, gestión de participantes y sorteo de desempate
 - 🎉 Confetti, escudo de Colombia y un barril asador dibujado en SVG
 
+## 🌐 Página en vivo
+
+La app está publicada con GitHub Pages:
+
+**https://alejandrom3lo.github.io/BarrilMundialista/**
+
+Cada push a `main` la vuelve a publicar automáticamente (workflow en [.github/workflows/deploy.yml](.github/workflows/deploy.yml)).
+
 ## Tecnología
 
-- [React](https://react.dev/) (componente único en [polla-sincosoft.tsx](polla-sincosoft.tsx))
+- [React](https://react.dev/) + [Vite](https://vite.dev/) (componente principal en [src/polla-sincosoft.tsx](src/polla-sincosoft.tsx))
 - [lucide-react](https://lucide.dev/) para los íconos
 - Estilos inline (sin dependencias de CSS)
+- Sin backend: los datos compartidos viven en [public/data/](public/data/) y los actualiza el administrador (ver [ADMIN.md](ADMIN.md)); la inscripción de cada participante se guarda en su navegador (`localStorage`) y el registro oficial es el formulario de Microsoft Forms
 
-> **Nota:** la persistencia usa las APIs `window.storage` y `window.fs` del entorno de artefactos de Claude. Para ejecutar la app en otro entorno (Vite, Next.js, etc.) hay que adaptar esas llamadas a `localStorage` o a un backend propio.
+## Desarrollo local
+
+```bash
+npm install
+npm run dev      # servidor de desarrollo en http://localhost:5173/BarrilMundialista/
+npm run build    # compila a dist/
+```
 
 ---
 
