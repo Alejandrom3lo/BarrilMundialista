@@ -32,7 +32,7 @@ const ADMIN_PW = "sincosoft2026";
 const K_PART = "polla:participants";
 const K_RES = "polla:results";
 const K_RAFFLE = "polla:raffle";
-const MS_FORM_URL = "https://forms.office.com/pages/responsepage.aspx?id=Qby0vFToEE-5BtFkPUXjST-0MedbdRdGkHts-rWF6sdUN0cyVkdKNzNBTTVNQlRRQUE0UVk2T1VGSy4u&route=shorturl";
+const MS_FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=Qby0vFToEE-5BtFkPUXjSZr9VGALs5ZMljWETNkDxZNUOEZTNzkzQUQxVFc0M1pKNlRZSUtBQk1FMy4u";
 
 /* ============ STORAGE HELPERS ============ */
 /* Datos compartidos (solo lectura): archivos JSON publicados en el repositorio (public/data/).
