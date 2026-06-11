@@ -342,7 +342,7 @@ export default function App() {
       </div>
 
       <footer style={{ textAlign: "center", padding: "0 16px 28px", color: C.muted, fontSize: 11 }}>
-        🌎 El ranking y los resultados oficiales se publican aquí y son visibles para todos los participantes de la polla.
+        🌎 El ranking y los resultados oficiales los publica el administrador de la polla.
       </footer>
     </div>
   );
@@ -839,8 +839,8 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
     ev.target.value = "";
   };
 
-  /* Descarga los 3 archivos de datos compartidos, listos para subirlos a public/data/ en GitHub.
-     Al subirlos, la p\u00E1gina se vuelve a publicar y todos los participantes ven los mismos datos. */
+  /* Descarga los 3 archivos de datos (participantes, resultados y sorteo) como
+     respaldo o para mover la polla a otro equipo o publicarla donde se quiera. */
   const downloadJSON = (filename, data) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1006,9 +1006,9 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
           <button onClick={exportCSV} disabled={participants.length === 0} style={actBtn(C.blue)}>
             <Download size={16} /> Exportar CSV
           </button>
-          <button onClick={exportShared} title="Descarga participants.json, results.json y raffle.json para subirlos a la carpeta public/data/ del repositorio en GitHub"
+          <button onClick={exportShared} title="Descarga participants.json, results.json y raffle.json como respaldo o para mover los datos a otro equipo"
             style={actBtn("transparent", C.green)}>
-            <Download size={16} /> Exportar JSON (publicar en GitHub)
+            <Download size={16} /> Exportar JSON (respaldo)
           </button>
           {!confirmReset ? (
             <button onClick={() => setConfirmReset(true)} style={actBtn("transparent", C.red)}>

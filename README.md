@@ -30,28 +30,28 @@ Gana quien acumule más puntos al final de los 3 partidos. En caso de empate, la
 - 🔐 Panel de administración protegido con contraseña: ingreso de resultados reales, gestión de participantes y sorteo de desempate
 - 🎉 Confetti, escudo de Colombia y un barril asador dibujado en SVG
 
-## 🌐 Página en vivo
+## 📄 La app es un solo archivo
 
-La app está publicada con GitHub Pages:
+**[polla-standalone.html](polla-standalone.html)** contiene toda la app: se distribuye por Teams o correo y se abre con doble clic, sin servidor ni internet.
 
-**https://alejandrom3lo.github.io/BarrilMundialista/**
+- Cada participante la abre, llena su pronóstico y la app descarga `inscripcion-<nombre>.txt` (JSON) que le envía al administrador.
+- El administrador importa esos `.txt` en el panel Admin, ingresa los resultados reales y el ranking se calcula deserializando el JSON.
 
-Cada push a `main` la vuelve a publicar automáticamente (workflow en [.github/workflows/deploy.yml](.github/workflows/deploy.yml)).
+El flujo completo del administrador está en [ADMIN.md](ADMIN.md).
 
 ## Tecnología
 
 - [React](https://react.dev/) + [Vite](https://vite.dev/) (componente principal en [src/polla-sincosoft.tsx](src/polla-sincosoft.tsx))
 - [lucide-react](https://lucide.dev/) para los íconos
 - Estilos inline (sin dependencias de CSS)
-- Sin backend: cada inscripción se descarga como archivo `.txt` (JSON) que el participante envía al administrador; el admin las importa, consolida y publica en [public/data/](public/data/) (ver [ADMIN.md](ADMIN.md)), y el ranking se muestra deserializando ese JSON
-- [polla-standalone.html](polla-standalone.html): toda la app en un único archivo HTML que funciona sin servidor (doble clic)
+- Sin backend: las inscripciones viajan como archivos `.txt` (JSON) y los datos viven en el `localStorage` del navegador
 
 ## Desarrollo local
 
 ```bash
 npm install
-npm run dev      # servidor de desarrollo en http://localhost:5173/BarrilMundialista/
-npm run build    # compila a dist/
+npm run dev           # servidor de desarrollo
+npm run build:single  # regenera el HTML autónomo en dist-standalone/index.html
 ```
 
 ---
