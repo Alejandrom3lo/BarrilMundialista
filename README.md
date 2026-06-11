@@ -43,7 +43,8 @@ Cada push a `main` la vuelve a publicar automáticamente (workflow en [.github/w
 - [React](https://react.dev/) + [Vite](https://vite.dev/) (componente principal en [src/polla-sincosoft.tsx](src/polla-sincosoft.tsx))
 - [lucide-react](https://lucide.dev/) para los íconos
 - Estilos inline (sin dependencias de CSS)
-- Sin backend: los datos compartidos viven en [public/data/](public/data/) y los actualiza el administrador (ver [ADMIN.md](ADMIN.md)); la inscripción de cada participante se guarda en su navegador (`localStorage`) y el registro oficial es el formulario de Microsoft Forms
+- Sin backend: cada inscripción se descarga como archivo `.txt` (JSON) que el participante envía al administrador; el admin las importa, consolida y publica en [public/data/](public/data/) (ver [ADMIN.md](ADMIN.md)), y el ranking se muestra deserializando ese JSON
+- [polla-standalone.html](polla-standalone.html): toda la app en un único archivo HTML que funciona sin servidor (doble clic)
 
 ## Desarrollo local
 

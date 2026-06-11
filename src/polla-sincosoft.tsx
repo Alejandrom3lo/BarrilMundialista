@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Trophy, Lock, Download, Trash2, Users, Clock, CheckCircle2, AlertCircle, Calendar, MapPin, Shield, Loader2, Send, Eye, EyeOff, Star, Dices } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Trophy, Lock, Download, Trash2, Users, Clock, CheckCircle2, AlertCircle, Calendar, MapPin, Shield, Loader2, Send, Eye, EyeOff, Star, Dices, Copy, Upload } from "lucide-react";
 
 /* ============ PALETA / CONSTANTES ============ */
 const C = {
@@ -32,7 +32,8 @@ const ADMIN_PW = "sincosoft2026";
 const K_PART = "polla:participants";
 const K_RES = "polla:results";
 const K_RAFFLE = "polla:raffle";
-const MS_FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=Qby0vFToEE-5BtFkPUXjSZr9VGALs5ZMljWETNkDxZNUOEZTNzkzQUQxVFc0M1pKNlRZSUtBQk1FMy4u";
+/* La inscripción de cada participante se entrega como archivo .txt (JSON)
+   que el participante envía al administrador; ya no se usa Microsoft Forms. */
 
 /* ============ STORAGE HELPERS ============ */
 /* Datos compartidos (solo lectura): archivos JSON publicados en el repositorio (public/data/).
@@ -341,7 +342,7 @@ export default function App() {
       </div>
 
       <footer style={{ textAlign: "center", padding: "0 16px 28px", color: C.muted, fontSize: 11 }}>
-        🌎 Los datos se guardan de forma compartida y son visibles para todos los participantes de la polla.
+        🌎 El ranking y los resultados oficiales se publican aquí y son visibles para todos los participantes de la polla.
       </footer>
     </div>
   );
@@ -366,9 +367,29 @@ function ParticipantView({ participants, setParticipants }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const setScore = (mid, side, val) =>
     setPreds((p) => ({ ...p, [mid]: { ...p[mid], [side]: val } }));
+
+  /* La inscripción se entrega como archivo .txt con el JSON; el participante
+     se lo envía al administrador (Teams o correo) y este lo importa en el panel Admin. */
+  const downloadEntry = (entry) => {
+    const safe = entry.name.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const blob = new Blob([JSON.stringify(entry, null, 2)], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `inscripcion-${safe || "participante"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const copyEntry = async (entry) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(entry, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch { /* sin permiso de portapapeles: queda la descarga */ }
+  };
 
   const handleSubmit = async () => {
     setError("");
@@ -397,6 +418,7 @@ function ParticipantView({ participants, setParticipants }) {
     if (!ok) { setError("No se pudo guardar tu inscripción. Intenta de nuevo."); return; }
     setParticipants(next);
     setDone(entry);
+    downloadEntry(entry);
   };
 
   if (done) {
@@ -423,19 +445,30 @@ function ParticipantView({ participants, setParticipants }) {
             </span>
           </div>
 
-          {/* Registro oficial en Microsoft Forms */}
+          {/* Entrega de la inscripción al administrador */}
           <div style={{ marginTop: 22, background: C.cardSoft, border: `1px solid ${C.yellow}`, borderRadius: 14, padding: 16 }}>
-            <div style={{ fontWeight: 900, color: C.yellow, fontSize: 14 }}>📝 Paso final: registro oficial</div>
+            <div style={{ fontWeight: 900, color: C.yellow, fontSize: 14 }}>📝 Paso final: envía tu inscripción</div>
             <p style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>
-              Para completar tu inscripción, registra <strong style={{ color: C.text }}>estos mismos marcadores</strong> en el formulario oficial MUNDIAL 2026 de Sincosoft:
+              Tu inscripción se descargó como un archivo <strong style={{ color: C.text }}>.txt</strong>.
+              Envíaselo al <strong style={{ color: C.text }}>administrador de la polla</strong> por Teams o correo para quedar oficialmente inscrito.
+              Si no ves la descarga, usa los botones:
             </p>
-            <a href={MS_FORM_URL} target="_blank" rel="noopener noreferrer" style={{
-              display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12,
-              background: C.blue, color: "#fff", fontWeight: 800, fontSize: 14,
-              padding: "12px 20px", borderRadius: 12, textDecoration: "none",
-            }}>
-              Abrir formulario MUNDIAL 2026 ↗
-            </a>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 12 }}>
+              <button onClick={() => downloadEntry(done)} style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: C.blue, color: "#fff", fontWeight: 800, fontSize: 14,
+                padding: "12px 20px", borderRadius: 12, border: "none", cursor: "pointer",
+              }}>
+                <Download size={16} /> Descargar mi inscripción (.txt)
+              </button>
+              <button onClick={() => copyEntry(done)} style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: "transparent", color: copied ? C.green : C.text, fontWeight: 800, fontSize: 14,
+                padding: "12px 20px", borderRadius: 12, border: `1px solid ${copied ? C.green : C.border}`, cursor: "pointer",
+              }}>
+                {copied ? <><CheckCircle2 size={16} /> ¡Copiada!</> : <><Copy size={16} /> Copiar inscripción</>}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -544,7 +577,7 @@ function ParticipantView({ participants, setParticipants }) {
       </Section>
 
       {/* FORMULARIO */}
-      <Section title="✍️ Inscríbete y pronostica" sub="Completa todos los campos. Tras enviar, te daremos el enlace del formulario oficial MUNDIAL 2026 para confirmar tu registro.">
+      <Section title="✍️ Inscríbete y pronostica" sub="Completa todos los campos. Al enviar se descarga tu inscripción en un archivo .txt: envíaselo al administrador para quedar oficialmente inscrito.">
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: 20, opacity: cd.closed ? 0.6 : 1 }}>
           <div style={{ display: "grid", gap: 14 }}>
             <Field label="Nombre completo *">
@@ -620,6 +653,8 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
   const [confirmReset, setConfirmReset] = useState(false);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState(() => ({ ...results }));
+  const [importMsg, setImportMsg] = useState("");
+  const fileRef = useRef(null);
 
   useEffect(() => { setDraft({ ...results }); }, [results]);
 
@@ -763,6 +798,45 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
     a.href = url; a.download = "polla_sincosoft_2026.csv";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  /* Importa las inscripciones .txt (JSON) que los participantes env\u00EDan al administrador.
+     Acepta varios archivos a la vez; cada uno puede traer una inscripci\u00F3n o un arreglo de ellas.
+     Deserializa, valida y descarta duplicados por correo. */
+  const importFiles = async (ev) => {
+    const files = Array.from(ev.target.files || []);
+    if (!files.length) return;
+    let added = 0, dup = 0, bad = 0;
+    const next = [...participants];
+    for (const f of files) {
+      try {
+        const parsed = JSON.parse(await f.text());
+        const list = Array.isArray(parsed) ? parsed : [parsed];
+        for (const e of list) {
+          const okPreds = e && e.predictions && [1, 2, 3].every((k) => e.predictions[k] && e.predictions[k].col != null && e.predictions[k].riv != null);
+          if (!e || !e.name || !emailOk(String(e.email || "")) || !okPreds) { bad++; continue; }
+          if (next.some((p) => p.email.toLowerCase() === String(e.email).toLowerCase())) { dup++; continue; }
+          next.push({
+            id: e.id || Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+            name: String(e.name).trim(),
+            email: String(e.email).trim(),
+            predictions: {
+              1: { col: Number(e.predictions[1].col), riv: Number(e.predictions[1].riv) },
+              2: { col: Number(e.predictions[2].col), riv: Number(e.predictions[2].riv) },
+              3: { col: Number(e.predictions[3].col), riv: Number(e.predictions[3].riv) },
+            },
+            timestamp: Number(e.timestamp) || Date.now(),
+          });
+          added++;
+        }
+      } catch { bad++; }
+    }
+    if (added > 0) {
+      await saveParticipants(next);
+      setParticipants(next);
+    }
+    setImportMsg(`Importadas: ${added} \u00B7 duplicadas: ${dup} \u00B7 con errores: ${bad}`);
+    ev.target.value = "";
   };
 
   /* Descarga los 3 archivos de datos compartidos, listos para subirlos a public/data/ en GitHub.
@@ -922,6 +996,13 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
 
         {/* ACCIONES */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          <input ref={fileRef} type="file" accept=".txt,.json,text/plain,application/json" multiple
+            style={{ display: "none" }} onChange={importFiles} />
+          <button onClick={() => fileRef.current && fileRef.current.click()}
+            title="Selecciona los archivos .txt de inscripción que te enviaron los participantes"
+            style={actBtn(C.yellow, C.navy)}>
+            <Upload size={16} /> Importar inscripciones (.txt)
+          </button>
           <button onClick={exportCSV} disabled={participants.length === 0} style={actBtn(C.blue)}>
             <Download size={16} /> Exportar CSV
           </button>
@@ -943,6 +1024,9 @@ function AdminView({ participants, setParticipants, results, setResults, raffle,
             </div>
           )}
         </div>
+        {importMsg && (
+          <p style={{ marginTop: 10, fontSize: 13, color: C.muted }}>📥 {importMsg}</p>
+        )}
       </Section>
     </div>
   );
